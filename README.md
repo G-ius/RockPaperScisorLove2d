@@ -1,4 +1,4 @@
-Hello , this is my take on the Tik-Tak-Toe algorithm.
+Hello , this is my take on the Tik-Tak-Toe algorithm mixed with neighbourhood algorithm.
 
 It's not optimised.
 
