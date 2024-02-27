@@ -16,22 +16,23 @@ local antiterations
 local reverse
 local freeToIterate
 local result
+local threshold
 
 Element = {
     point = {},
-    active,
     id = 0,
     expiration = 0,
+    iterable = 0,
     createdAt = 0,
     age = 0
 }
 
-function Element:new(point, active, id, iter)
+function Element:new(point, id, iterable)
     local element = {}
     setmetatable(element, self)
     self.__index = self
     element.point = point
-    element.active = active
+    element.iterable = iterable
     element.id = id
     element.expiration = 300
     element.createdAt = iter
@@ -45,6 +46,7 @@ function love.load()
     iterations = 0
     antiterations = 0
     freeToIterate = 0
+    threshold = 4
     reverse = false
     borderedLeftWidth = borderExpessure
     borderedDownHeight = wh - borderExpessure
@@ -52,30 +54,19 @@ function love.load()
     borderedRightWidth = ww - borderExpessure
     playgroundWidth = ww - (2 * borderExpessure)
     playgroundHeigth = wh - (2 * borderExpessure)
-    resetPoints()
+    generateNoise()
+    -- resetPoints()
 end
 
 function love.update(dt)
-    manageMouse()
+    -- manageMouse()
     -- iteratePoints()
-    iterate()
+    -- iterate()
 end
 
 function love.draw()
-    result = love.timer.getTime()
-    setBorder()
-    lg.setColor(1, 1, 1)
+    -- lg.setColor(0, 0, 0)
     lg.points(renderedPoints)
-    print((love.timer.getTime() - result) .. " - draw timer")
-
-end
-
-function setBorder()
-    lg.setColor(0, 0, 0)
-    lg.rectangle('fill', 0, borderedDownHeight, ww, borderExpessure)
-    lg.rectangle('fill', 0, 0, ww, borderExpessure)
-    lg.rectangle('fill', 0, 0, borderExpessure, borderedDownHeight)
-    lg.rectangle('fill', borderedRightWidth, 0, borderExpessure, borderedDownHeight)
 end
 
 function manageMouse()
@@ -107,7 +98,6 @@ function iterate()
 end
 
 function resetPoints()
-
     count = #renderedPoints
     for i = 0, count do
         table.remove(renderedPoints, i)
@@ -206,7 +196,6 @@ function iteratePoints()
         end
     end
 
-
     for i = 1, playgroundWidth - 1 do
         for j = 1, playgroundHeigth - 1 do
             calculateResult(reorderedPoints, i, j)
@@ -222,3 +211,72 @@ function iteratePoints()
     print(love.timer.getTime() - start)
 end
 
+function iterateCave()
+
+    for c = 0, 5 do
+        print(c)
+        local reorderedPoints = {}
+
+        for i = 0, playgroundWidth do
+            reorderedPoints[i] = {}
+            for j = 0, playgroundHeigth do
+                verifyNeighbours(reorderedPoints, i, j)
+            end
+        end
+
+        for i = 0, playgroundWidth do
+            points[i] = {}
+            for j = 0, playgroundHeigth do
+
+                points[i][j] = reorderedPoints[i][j]
+            end
+        end
+
+    end
+
+    count = #renderedPoints
+    for i = 0, count do
+        table.remove(renderedPoints, i)
+    end
+
+    for i = 0, playgroundWidth do
+        for j = 0, playgroundHeigth do
+            table.insert(renderedPoints, points[i][j].point)
+        end
+    end
+
+end
+
+function verifyNeighbours(reorderedPoints, i, j)
+    local counter = 0
+    for k = -1, 1 do
+        for n = -1, 1 do
+            if k + n ~= 0 then
+                if i + k >= 0 and n + j >= 0 and i + k <= playgroundWidth and j + n <= playgroundHeigth then
+                    if points[i + k][j + n].iterable > 0 then
+                        counter = counter + 1
+                    end
+                end
+            end
+        end
+    end
+    if counter >= threshold then
+        reorderedPoints[i][j] = Element:new({i + borderExpessure, j + borderExpessure, 0, 0, 0}, 9, 0)
+    end
+    if counter < threshold then
+        reorderedPoints[i][j] = Element:new({i + borderExpessure, j + borderExpessure, 1, 1, 1}, 9, 1)
+    end
+end
+
+function generateNoise()
+
+    for i = 0, playgroundWidth + 1 do
+        points[i] = {}
+        for j = 0, playgroundHeigth + 1 do
+            local magicNumber = math.random(0, 1)
+            points[i][j] = Element:new({i + borderExpessure, j + borderExpessure, 1 - magicNumber, 1 - magicNumber,
+                                        1 - magicNumber}, 9, magicNumber)
+        end
+    end
+    iterateCave()
+end
